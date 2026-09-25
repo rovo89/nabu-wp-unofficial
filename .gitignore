@@ -1,0 +1,18 @@
+# Content of another NABU group, fetched for local testing only.
+scripts/sample-data/
+
+# A group's own data for the scaffold (template: scripts/group.example.json).
+group.json
+
+# Content exported from an instance (scripts/export-content.php).
+content-export/
+
+# Backups and database dumps.
+*.sql
+*.sql.gz
+*.tar.gz
+
+.env
+__pycache__/
+*.pyc
+.DS_Store

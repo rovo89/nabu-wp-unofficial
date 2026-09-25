@@ -1,0 +1,99 @@
+# Local test instances for the theme. Not for production: credentials are in
+# plain text and the port may be bound to all interfaces.
+#
+# Two instances share this file and differ only by project name and port:
+#
+#   staging  — a copy of production, refreshed with scripts/staging-refresh.sh.
+#              This is the instance you work on day to day.
+#   clean    — built from scratch by scripts/setup.sh with demo content; shows
+#              exactly what is in Git and whether a change depends on something
+#              that only exists in staging's database.
+#
+# Both mount the same theme and plugin directories, so a code change is
+# visible in both immediately. Settings come from .env (copy .env.example).
+services:
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: wordpress
+      MARIADB_ROOT_PASSWORD: root
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  wordpress:
+    # The WordPress and PHP versions of production. The image fills only an
+    # empty wp-data volume; after raising the tag, run `wp core update` in
+    # existing instances.
+    image: wordpress:7.1-php8.5-apache
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # NABU_BIND: "0.0.0.0" opens the instance to the LAN/tailnet (handy for
+      # phones and showing the board), "127.0.0.1" keeps it on this machine.
+      - "${NABU_BIND:-127.0.0.1}:${NABU_PORT:-8090}:80"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DEBUG: 1
+      WORDPRESS_CONFIG_EXTRA: |
+        define( 'WP_DEBUG_LOG', true );
+        define( 'WP_DEBUG_DISPLAY', false );
+        define( 'DISALLOW_FILE_EDIT', true );
+
+        /*
+         * Derive the site address from the requested host so the instance
+         * works under every address of this machine (localhost, LAN IP,
+         * Tailscale) and does not redirect back to localhost.
+         *
+         * Test instances only: on a public server this would invite
+         * host-header attacks. Production gets fixed values.
+         */
+        if ( ! empty( $$_SERVER['HTTP_HOST'] ) ) {
+            $$nabu_host   = preg_replace( '/[^A-Za-z0-9.:\[\]-]/', '', (string) $$_SERVER['HTTP_HOST'] );
+            $$nabu_scheme = ( ! empty( $$_SERVER['HTTPS'] ) && 'off' !== $$_SERVER['HTTPS'] ) ? 'https' : 'http';
+            if ( '' !== $$nabu_host ) {
+                define( 'WP_HOME', $$nabu_scheme . '://' . $$nabu_host );
+                define( 'WP_SITEURL', $$nabu_scheme . '://' . $$nabu_host );
+            }
+        }
+    volumes:
+      - wp-data:/var/www/html
+      - ./themes/nabu-unofficial:/var/www/html/wp-content/themes/nabu-unofficial
+      - ./plugins/nabu-unofficial-content:/var/www/html/wp-content/plugins/nabu-unofficial-content
+
+  cli:
+    image: wordpress:cli-php8.5
+    depends_on:
+      - wordpress
+    user: "33:33"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      # scripts/demo-content.php: 1 overwrites demo posts edited by hand.
+      NABU_DEMO_FORCE: ${NABU_DEMO_FORCE:-0}
+    volumes:
+      - wp-data:/var/www/html
+      - ./themes/nabu-unofficial:/var/www/html/wp-content/themes/nabu-unofficial
+      - ./plugins/nabu-unofficial-content:/var/www/html/wp-content/plugins/nabu-unofficial-content
+      - ./scripts:/scripts:ro
+      - ./content-export:/content-export
+    entrypoint: ["wp"]
+    command: ["--info"]
+
+volumes:
+  db-data:
+  wp-data:

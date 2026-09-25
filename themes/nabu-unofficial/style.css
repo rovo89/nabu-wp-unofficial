@@ -1,0 +1,1469 @@
+/*
+Theme Name: NABU Unofficial
+Theme URI: https://github.com/rovo89/nabu-wp-unofficial
+Author: Robert Vollmer
+Author URI: https://github.com/rovo89
+Description: Block-Theme für NABU-Ortsgruppen im Stil des offiziellen NABU-Webauftritts: zweistufiger Kopfbereich mit Logoreiter, gesperrte Palette in den offiziellen NABU-Farbwerten, Source Sans 3 selbst gehostet, keine Aufrufe fremder Server. Inoffiziell — nicht vom NABU herausgegeben.
+Requires at least: 6.9
+Tested up to: 7.1
+Requires PHP: 7.4
+Version: 1.0.0
+License: GNU General Public License v2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: nabu-unofficial
+Update URI: false
+Tags: block-theme, full-site-editing, two-columns, right-sidebar, custom-logo, block-patterns, block-styles, editor-style
+*/
+
+/* ==========================================================================
+   Arrow icon
+   nabu.de draws the arrows after links and buttons with Font Awesome
+   ("\f061"). A subset with just the two arrows is enough: 624 bytes instead
+   of 158 kB. Licence in assets/fonts/LICENSE-font-awesome.txt.
+   ========================================================================== */
+
+@font-face {
+	font-family: "NABU Arrows";
+	font-style: normal;
+	font-weight: 900;
+	/* Rather nothing for a moment than a stray fallback glyph. */
+	font-display: block;
+	src: url(assets/fonts/nabu-arrows.woff2) format("woff2");
+}
+
+/* ==========================================================================
+   Tokens theme.json cannot express. Colours, font sizes and spacing come
+   from theme.json as --wp--preset--*.
+   ========================================================================== */
+
+:root {
+	/* Layout: the content grid of nabu.de. */
+	--nabu-container: 940px;
+	--nabu-gutter: clamp(1rem, 4vw, 2.5rem);
+	/* Line length inside containers wider than the text column. */
+	--nabu-measure: 42.5rem;
+
+	/* Header geometry, as on nabu.de: sand strip, blue bar, five equal items. */
+	--nabu-meta-h: 3.75rem;
+	--nabu-nav-h:  2.625rem;
+	--nabu-nav-item-w: 9.5rem;
+	/* The logo tab, indented from the grid edge. The NABU group logo is one
+	   geometry for every group (viewBox 159.874 × 150.945) and brings its own
+	   white area and blue bar, so the tab needs no padding. */
+	--nabu-logo-w: 160px;
+	--nabu-logo-h: 151px;
+	--nabu-logo-left: 1.1875rem;
+	/* How far the tab hangs below the blue bar: into the hero image on the
+	   front page, over the breadcrumb row elsewhere. */
+	--nabu-logo-overhang: calc(var(--nabu-logo-h) - var(--nabu-meta-h) - var(--nabu-nav-h));
+
+	/* Shape & motion */
+	--nabu-radius-sm: 4px;
+	--nabu-radius:    7px;    /* the NABU button radius */
+	--nabu-transition: 180ms ease;
+	--nabu-tap: 44px;
+
+	/* nabu.de's name for the arrow font. */
+	--fa-style-family-classic: "NABU Arrows";
+
+	/* Focus */
+	--nabu-focus-color: var(--wp--preset--color--nabu-darkblue);
+	--nabu-focus-width: 3px;
+	--nabu-focus-offset: 2px;
+
+	--nabu-hairline: 1px solid rgba(0, 0, 0, 0.12);
+	--nabu-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	:root { --nabu-transition: 0ms; }
+	*, *::before, *::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+html { scroll-behavior: smooth; }
+body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+/* Readable line length, also inside post-content. */
+.nabu-measure :is(p, ul, ol, blockquote, .wp-block-post-excerpt) {
+	max-width: var(--nabu-measure);
+}
+
+/* Spacing in the text column: 14px between blocks, 10px after a heading.
+   Core's block gap (1.5rem) is printed after this stylesheet with the same
+   specificity; the doubled class and :not(:first-child) outweigh it. */
+.nabu-article.nabu-article :where(.is-layout-flow, .is-layout-constrained) > *:not(:first-child),
+.nabu-article.nabu-article > *:not(:first-child) {
+	margin-block-start: 0.875rem;
+}
+/* :not(:first-child) as weight: the 14px rule above carries it too. */
+.nabu-article.nabu-article :is(h1, h2, h3, h4, h5, h6) + *:not(:first-child) {
+	margin-block-start: 0.625rem;
+}
+/* More air before a section heading than between paragraphs. */
+.nabu-article.nabu-article :is(h2, h3, h4, h5, h6):not(:first-child) {
+	margin-block-start: 1.75rem;
+}
+/* The same when the text opens with a section heading, as the imprint does:
+   post-content already sits 10px under the title, so add the difference. */
+.nabu-article.nabu-article .wp-block-post-content > :is(h2, h3, h4, h5, h6):first-child {
+	margin-block-start: calc(1.75rem - 0.625rem);
+}
+
+/* The article column aligns its content left on the grid, as nabu.de's
+   subpages do, instead of centring it. Core centres with
+   `margin-left: auto !important`, printed after this stylesheet; hence
+   !important and the doubled class. */
+.nabu-article.nabu-article > :not(.alignwide):not(.alignfull),
+.nabu-article.nabu-article .wp-block-post-content > :not(.alignwide):not(.alignfull) {
+	margin-left: 0 !important;
+	margin-right: auto !important;
+}
+
+/* A visible focus everywhere. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+	outline: var(--nabu-focus-width) solid var(--nabu-focus-color);
+	outline-offset: var(--nabu-focus-offset);
+	border-radius: var(--nabu-radius-sm);
+}
+/* White outline on blue/dark surfaces, otherwise invisible. */
+.nabu-navbar :where(a, button):focus-visible,
+.nabu-footer :where(a, button):focus-visible,
+.has-nabu-blue-background-color :where(a, button):focus-visible,
+.has-nabu-darkblue-background-color :where(a, button):focus-visible,
+.wp-block-cover :where(a, button):focus-visible {
+	outline-color: #fff;
+}
+
+.skip-link.screen-reader-text:focus {
+	background: var(--wp--preset--color--white);
+	color: var(--wp--preset--color--nabu-darkblue);
+	font-weight: 600;
+	padding: 0.75rem 1.25rem;
+	border-radius: var(--nabu-radius);
+	box-shadow: var(--nabu-shadow-md);
+	z-index: 1000;
+}
+
+/* Minimum tap target for everything interactive in header and footer. */
+.nabu-header a,
+.nabu-header button,
+.nabu-footer a[class*="button"],
+.nabu-social a {
+	min-height: var(--nabu-tap);
+	display: inline-flex;
+	align-items: center;
+}
+
+/* ==========================================================================
+   Header — sand strip, blue bar, logo tab
+   The tab overlaps both bars and hangs out below them, by negative margins
+   in the flex row, so it does not push the content down.
+   ========================================================================== */
+
+.nabu-header {
+	position: relative;
+	z-index: 20;
+	/* Sand behind the whole header: on subpages the blue bar ends at the
+	   grid, and it is sand, not white, to its left and right. */
+	background-color: var(--wp--preset--color--nabu-sand);
+	/* No gap between the bars, nor between header and content. */
+	--wp--style--block-gap: 0px;
+}
+.nabu-header > * { margin-block: 0; }
+.nabu-main { margin-block-start: 0; }
+
+/* --- Sand strip (service navigation and search) --- */
+.nabu-meta {
+	min-height: var(--nabu-meta-h);
+	font-size: var(--wp--preset--font-size--small);
+}
+/* Core pads every group with a background; the bars take their height from
+   their content. */
+.nabu-meta.wp-block-group.has-background,
+.nabu-navbar.wp-block-group.has-background {
+	padding-top: 0;
+	padding-bottom: 0;
+}
+.nabu-meta__inner {
+	min-height: var(--nabu-meta-h);
+	flex-wrap: nowrap;
+	gap: 0.25rem 1.25rem;
+}
+.nabu-meta__inner .wp-block-search { margin-block: 0; margin-left: 1.4375rem; }
+.nabu-meta__inner .wp-block-search__inside-wrapper { align-items: center; }
+/* Field and button form one element, as on nabu.de: a transparent field
+   with a blue border, a blue button with the magnifier, orange on focus. */
+.nabu-meta .wp-block-search__input {
+	background-color: transparent;
+	border: 1px solid var(--wp--preset--color--nabu-blue);
+	border-right-width: 0;
+	border-radius: 6px 0 0 6px;
+	/* nabu.de's width; just above the mobile layout it gives way a little,
+	   so the service links beside it stay on one line. */
+	width: clamp(8rem, 100vw - 42rem, 10.625rem);
+	height: 1.875rem;
+	min-height: 0;
+	padding: 6px 5px 6px 10px;
+	font-size: 0.8333rem; /* nabu.de: 13.33px */
+	color: var(--wp--preset--color--nabu-text);
+}
+.nabu-meta .wp-block-search__input::placeholder { color: var(--wp--preset--color--nabu-greygreen); opacity: 1; }
+.nabu-meta .wp-block-search__input:focus {
+	outline: 0;
+	border-color: var(--wp--preset--color--nabu-orange);
+}
+.nabu-meta .wp-block-search__button {
+	border: 1px solid var(--wp--preset--color--nabu-blue);
+	border-radius: 0 6px 6px 0;
+	background-color: var(--wp--preset--color--nabu-blue);
+	color: #fff;
+	width: 1.875rem;
+	height: 1.875rem;
+	min-height: 0;
+	min-width: 0;
+	padding: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin: 0;
+}
+.nabu-meta .wp-block-search__button svg { width: 18px; height: 18px; fill: currentColor; }
+.nabu-meta .wp-block-search__button:hover,
+.nabu-meta .wp-block-search__button:focus {
+	background-color: var(--wp--preset--color--nabu-orange);
+	border-color: var(--wp--preset--color--nabu-orange);
+}
+/* Smaller than a tap target with a mouse, as on nabu.de; full size on touch. */
+@media (pointer: coarse) {
+	.nabu-meta .wp-block-search__input,
+	.nabu-meta .wp-block-search__button { height: var(--nabu-tap); }
+	.nabu-meta .wp-block-search__button { width: var(--nabu-tap); }
+}
+/* Core forces `color: inherit` on navigation links with a stronger selector
+   printed after this stylesheet, so the colour goes on the container. */
+.nabu-meta .wp-block-navigation { color: var(--wp--preset--color--nabu-text); }
+.nabu-meta a {
+	color: var(--wp--preset--color--nabu-text);
+	text-decoration: none;
+	font-weight: 400;
+}
+.nabu-meta a:hover,
+.nabu-meta a:focus { text-decoration: underline; }
+.nabu-meta [aria-current="page"],
+.nabu-meta [aria-current="true"] { font-weight: 600; }
+.nabu-meta .wp-block-navigation { font-size: 0.875rem; }
+.nabu-meta .wp-block-navigation .wp-block-navigation-item__content {
+	padding: 0;
+	min-height: 0;
+}
+.nabu-meta .wp-block-navigation__container { gap: 1.5rem; }
+
+/* The logo tab needs room on the left of the sand strip. */
+.nabu-meta__inner { padding-left: calc(var(--nabu-logo-left) + var(--nabu-logo-w) + 1.5rem); }
+
+/* --- Blue bar (main navigation) ---
+   Above a full-width hero the bar runs edge to edge and forms one band with
+   the image, as on nabu.de; elsewhere it ends at the grid. Hence the colour
+   is set here and not as a block background. */
+.nabu-navbar { position: relative; }
+.nabu-navbar__inner { background-color: var(--wp--preset--color--nabu-blue); }
+/* Separate rules, so a browser without :has() still gets the front page right. */
+body.home .nabu-navbar { background-color: var(--wp--preset--color--nabu-blue); }
+body.home .nabu-navbar__inner { background-color: transparent; }
+body:has(.nabu-hero) .nabu-navbar { background-color: var(--wp--preset--color--nabu-blue); }
+body:has(.nabu-hero) .nabu-navbar__inner { background-color: transparent; }
+.nabu-navbar__inner {
+	min-height: var(--nabu-nav-h);
+	gap: 0;
+	align-items: stretch;
+}
+
+/* --- Logo tab ---
+   The margins go through .nabu-navbar__inner to outweigh core's flex
+   layout reset. */
+.nabu-navbar__inner > .nabu-logo-tab {
+	margin-left: var(--nabu-logo-left);
+	margin-top: calc(-1 * var(--nabu-meta-h));
+	margin-bottom: calc(var(--nabu-meta-h) + var(--nabu-nav-h) - var(--nabu-logo-h));
+}
+.nabu-logo-tab {
+	position: relative;
+	z-index: 30;
+	flex: 0 0 auto;
+	width: var(--nabu-logo-w);
+	min-height: var(--nabu-logo-h);
+	background: var(--wp--preset--color--white);
+	/* The logo's clear space is part of the file. */
+	padding: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+.nabu-logo-tab .wp-block-site-logo,
+.nabu-logo-tab .wp-block-site-logo a,
+.nabu-logo-tab .wp-block-image { display: block; width: 100%; min-height: 0; }
+.nabu-logo-tab img { display: block; width: 100%; height: auto; }
+
+/* --- Main navigation ---
+   As rendered on nabu.de: items of 152 × 42 px, 15px regular, centred, with
+   white separators between them. */
+.nabu-navbar .wp-block-navigation {
+	color: #fff; /* inherited by the links, see above */
+	--wp--style--block-gap: 0;
+	font-size: 0.9375rem;
+	font-weight: 400;
+	align-items: stretch;
+}
+/* The navigation takes the room beside the logo tab, so the items have a
+   width to share out; they stay at the right. */
+.nabu-navbar__inner > .wp-block-navigation { flex: 1 1 auto; min-width: 0; }
+.nabu-navbar .wp-block-navigation__container { flex: 1 1 auto; align-items: stretch; gap: 0; }
+.nabu-navbar .wp-block-navigation-item {
+	position: relative;
+	/* nabu.de's width where the window has room for it; below that the items
+	   give way down to their word, and a long word widens its box. */
+	flex: 0 1 var(--nabu-nav-item-w);
+	align-items: stretch;
+}
+.nabu-navbar .wp-block-navigation-item:not(:last-child)::after {
+	content: "";
+	position: absolute;
+	right: 0;
+	top: 0;
+	height: var(--nabu-nav-h);
+	border-right: 1px solid rgba(255, 255, 255, 0.85);
+}
+.nabu-navbar .wp-block-navigation-item__content {
+	color: #fff;
+	text-decoration: none;
+	box-sizing: border-box;
+	width: 100%;
+	min-height: var(--nabu-nav-h);
+	padding: 0 clamp(0.625rem, 1.5vw, 1.25rem) 0.1875rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	line-height: 1.05;
+	transition: background-color var(--nabu-transition);
+}
+.nabu-navbar .wp-block-navigation-item__content:hover,
+.nabu-navbar .wp-block-navigation-item__content:focus {
+	background: var(--wp--preset--color--nabu-darkblue);
+	color: #fff;
+	text-decoration: none;
+}
+/* The current section: not by colour alone, also an orange edge. */
+.nabu-navbar .wp-block-navigation-item .wp-block-navigation-item__content[aria-current="page"],
+.nabu-navbar .wp-block-navigation-item.current-menu-item > .wp-block-navigation-item__content {
+	background: var(--wp--preset--color--nabu-darkblue);
+	box-shadow: inset 0 -4px 0 0 var(--wp--preset--color--nabu-orange);
+}
+
+/* The call-to-action item, marked by a class the editors can set on any link. */
+.nabu-navbar .wp-block-navigation-item.nabu-nav-cta > .wp-block-navigation-item__content {
+	background: var(--wp--preset--color--nabu-orange);
+}
+.nabu-navbar .wp-block-navigation-item.nabu-nav-cta > .wp-block-navigation-item__content:hover,
+.nabu-navbar .wp-block-navigation-item.nabu-nav-cta > .wp-block-navigation-item__content:focus {
+	background: var(--wp--preset--color--nabu-darkorange);
+}
+
+/* Submenus: plain dropdown, no mega menu. */
+.nabu-navbar .wp-block-navigation__submenu-container {
+	background: var(--wp--preset--color--nabu-darkblue);
+	border: 0;
+	min-width: 15rem;
+	box-shadow: var(--nabu-shadow-md);
+}
+.nabu-navbar .wp-block-navigation__submenu-container .wp-block-navigation-item { border-left: 0; min-width: 0; }
+.nabu-navbar .wp-block-navigation__submenu-container .wp-block-navigation-item::after { content: none; }
+.nabu-navbar .wp-block-navigation__submenu-container .wp-block-navigation-item__content {
+	min-height: auto;
+	padding: 0.7rem 1.15rem;
+	justify-content: flex-start;
+	text-align: left;
+}
+.nabu-navbar .wp-block-navigation__submenu-container .wp-block-navigation-item__content::before {
+	margin-right: 0.5em;
+	opacity: 0.8;
+}
+
+/* --- Header on mobile: a taller bar, a smaller tab hanging out below --- */
+@media (max-width: 781px) {
+	:root {
+		/* The tab ends exactly on the breadcrumb row: 0.5rem + 92px = bar
+		   (56px) + row (44px). Width from the logo's aspect ratio. */
+		--nabu-logo-w: 97px;
+		--nabu-logo-h: 92px;
+		--nabu-nav-h: 3.5rem; /* room for a 44px tap target */
+		--nabu-logo-overhang: calc(var(--nabu-logo-h) + 0.5rem - var(--nabu-nav-h));
+	}
+	.nabu-meta { display: none; }
+	.nabu-meta__inner { padding-left: 0; }
+	/* The bar runs edge to edge. */
+	.nabu-navbar { background-color: var(--wp--preset--color--nabu-blue); }
+	.nabu-navbar__inner { background-color: transparent; }
+	.nabu-navbar__inner {
+		align-items: flex-start;
+		gap: 0.5rem;
+		min-height: var(--nabu-nav-h);
+	}
+	/* A negative bottom margin, as on desktop. */
+	.nabu-navbar__inner > .nabu-logo-tab {
+		margin-left: 0;
+		margin-top: 0.5rem;
+		margin-bottom: calc(-1 * var(--nabu-logo-overhang));
+	}
+	.nabu-logo-tab { min-height: 0; }
+	.nabu-navbar .wp-block-navigation {
+		align-self: center;
+		margin-top: 0;
+	}
+}
+
+/* ==========================================================================
+   Hero
+   ========================================================================== */
+
+/* The subtitle close under the heading; core's layout gap is a fixed 1.5rem. */
+.nabu-hero :is(h1, h2) + p { margin-block-start: 0.5rem; }
+.nabu-hero.wp-block-cover {
+	/* 40% of the window height, 300 to 560px, but never taller than the photo
+	   at full width (--nabu-hero-ratio, from nabu_hero_image()). Below 300px,
+	   as on phones, the photo is trimmed left and right. */
+	min-height: 0;
+	height: clamp(300px, min(100vw / var(--nabu-hero-ratio, 3.2), 40vh), 560px);
+	padding: 0;
+	align-items: flex-end;
+	justify-content: center;
+}
+/* The text sits on the grid of navigation and content. */
+.nabu-hero > .wp-block-cover__inner-container {
+	width: 100%;
+	max-width: calc(var(--nabu-container) + 2 * var(--nabu-gutter));
+	margin-inline: auto;
+	padding-block: 0 clamp(1.25rem, 3vw, 2rem);
+	padding-inline: var(--nabu-gutter);
+	box-sizing: border-box;
+}
+.nabu-hero :is(h1, h2, p) { color: #fff; }
+.nabu-hero h1, .nabu-hero h2 {
+	text-shadow: none;
+	margin-bottom: 0.25em;
+	/* Larger than the h1 of the text scale. */
+	font-size: clamp(1.75rem, 2.6vw, 2.5rem);
+}
+.nabu-hero p { font-size: clamp(0.9375rem, 0.8vw, 1.09375rem); }
+/* The logo tab hangs into the hero; the text keeps clear of it. */
+@media (min-width: 782px) {
+	.nabu-hero > .wp-block-cover__inner-container { padding-top: calc(var(--nabu-logo-overhang) + 1rem); }
+}
+
+/* The photo whole, the sides filled: the sharp photo as high as the hero and
+   centred, fading into a blurred copy where it is narrower than the window.
+   The fade is at most a fifth of the photo and never wider than the gap, so
+   a photo that fills the width keeps sharp edges. cqw/cqh are the hero. */
+.nabu-hero--framed.wp-block-cover { container-type: size; }
+.nabu-hero--framed > .wp-block-cover__image-background:not(.nabu-hero__blur) {
+	--nabu-hero-photo: calc(100cqh * var(--nabu-hero-ratio));
+	--nabu-hero-fade: clamp(0px, (100cqw - var(--nabu-hero-photo)) / 2, var(--nabu-hero-photo) / 5);
+	z-index: 1;
+	left: 50%;
+	right: auto;
+	width: auto;
+	max-width: none;
+	height: 100%;
+	transform: translateX(-50%);
+	-webkit-mask-image: linear-gradient(to right, transparent, #000 var(--nabu-hero-fade), #000 calc(100% - var(--nabu-hero-fade)), transparent);
+	mask-image: linear-gradient(to right, transparent, #000 var(--nabu-hero-fade), #000 calc(100% - var(--nabu-hero-fade)), transparent);
+}
+/* Larger than the hero, so the blur has no pale rim. */
+.nabu-hero__blur.wp-block-cover__image-background {
+	inset: -60px;
+	width: calc(100% + 120px);
+	height: calc(100% + 120px);
+	max-width: none;
+	filter: blur(30px) saturate(1.1);
+}
+.nabu-hero--framed > .wp-block-cover__background { z-index: 2; }
+.nabu-hero--framed > .wp-block-cover__inner-container { z-index: 3; }
+
+/* Image credit. */
+.nabu-credit {
+	font-size: var(--wp--preset--font-size--x-small);
+	color: var(--wp--preset--color--nabu-greygreen);
+}
+.nabu-hero .nabu-credit { color: rgba(255, 255, 255, 0.85); }
+
+/* The credit of the article image lies on the image, as on the cards;
+   overflow keeps the gradient inside the rounded corners. */
+.nabu-article .wp-block-post-featured-image {
+	position: relative;
+	overflow: hidden;
+}
+.nabu-article .wp-block-post-featured-image figcaption {
+	position: absolute;
+	inset-inline: 0;
+	bottom: 0;
+	margin: 0;
+	padding: 1.75rem 1rem 0.6rem;
+	text-align: right;
+	line-height: 1.3;
+	color: rgba(255, 255, 255, 0.92);
+	background: linear-gradient(to top, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0));
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
+/* ==========================================================================
+   Buttons — variants registered in functions.php
+   ========================================================================== */
+
+.wp-block-button .wp-block-button__link {
+	min-height: var(--nabu-tap);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.45em;
+	transition: background-color var(--nabu-transition), color var(--nabu-transition), border-color var(--nabu-transition);
+}
+
+/* Call to action in the official NABU orange. White on it measures 2.77:1 and
+   fails WCAG AA — the price of the brand colour, eased by weight and by
+   clear hover and focus states. */
+.wp-block-button.is-style-nabu-cta .wp-block-button__link {
+	background-color: var(--wp--preset--color--nabu-orange);
+	color: #fff;
+}
+.wp-block-button.is-style-nabu-cta .wp-block-button__link:hover,
+.wp-block-button.is-style-nabu-cta .wp-block-button__link:focus {
+	background-color: var(--wp--preset--color--nabu-darkorange);
+	color: #fff;
+}
+
+/* An arrow on the buttons that carry the class. */
+.nabu-btn-arrow .wp-block-button__link::after { font-size: 0.9em; }
+
+/* Ghost button on photo/colour */
+.wp-block-button.is-style-nabu-ghost .wp-block-button__link {
+	background-color: transparent;
+	color: #fff;
+	border: 2px solid #fff;
+}
+.wp-block-button.is-style-nabu-ghost .wp-block-button__link:hover,
+.wp-block-button.is-style-nabu-ghost .wp-block-button__link:focus {
+	background-color: #fff;
+	color: var(--wp--preset--color--nabu-darkblue);
+}
+
+/* Ghost button on white or sand, in dark blue: NABU blue on sand measures
+   4.44:1, below AA for text; dark blue passes on both. */
+.wp-block-button.is-style-nabu-ghost-dark .wp-block-button__link {
+	background-color: transparent;
+	color: var(--wp--preset--color--nabu-darkblue);
+	border: 2px solid var(--wp--preset--color--nabu-darkblue);
+}
+.wp-block-button.is-style-nabu-ghost-dark .wp-block-button__link:hover,
+.wp-block-button.is-style-nabu-ghost-dark .wp-block-button__link:focus {
+	background-color: var(--wp--preset--color--nabu-darkblue);
+	color: #fff;
+}
+
+/* ==========================================================================
+   Links — the arrow idiom
+   ========================================================================== */
+
+/* Every arrow in the theme comes from this rule; spacing and motion are set
+   where each one is used. */
+a.nabu-arrow-link::after,
+.nabu-arrow-link > a::after,
+.nabu-btn-arrow .wp-block-button__link::after,
+.nabu-donatebar__cta::after,
+.wp-block-query-pagination-next::after,
+.wp-block-query-pagination-previous::before,
+.nabu-footer li a::before,
+.nabu-navbar .wp-block-navigation__submenu-container .wp-block-navigation-item__content::before {
+	content: "\f061"; /* arrow-right */
+	/* An empty alternative text keeps screen readers quiet; browsers without
+	   the syntax drop this declaration and keep the one above. */
+	content: "\f061" / "";
+	font-family: var(--fa-style-family-classic);
+	font-weight: 900;
+	font-style: normal;
+	font-variant: normal;
+	line-height: 1;
+	display: inline-block;
+	text-decoration: none;
+	speak: never;
+	-webkit-font-smoothing: antialiased;
+}
+.wp-block-query-pagination-previous::before {
+	content: "\f060"; /* arrow-left */
+	content: "\f060" / "";
+}
+
+/* The class may sit on the link or on its paragraph; the arrow is the link's. */
+.nabu-arrow-link,
+.nabu-arrow-link > a {
+	font-weight: 600;
+	text-decoration: none;
+}
+a.nabu-arrow-link,
+.nabu-arrow-link > a {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4em;
+}
+a.nabu-arrow-link::after,
+.nabu-arrow-link > a::after {
+	transition: transform var(--nabu-transition);
+}
+a.nabu-arrow-link:hover::after,
+.nabu-arrow-link > a:hover::after { transform: translateX(2px); }
+a.nabu-arrow-link:hover,
+.nabu-arrow-link > a:hover { text-decoration: underline; }
+
+/* Links on sand in dark blue: NABU blue measures 4.44:1 there. */
+.has-nabu-sand-background-color a,
+.nabu-widget a,
+.nabu-card--sand a,
+.nabu-card--sand :is(h2, h3, .wp-block-post-title, .wp-block-post-title a) {
+	color: var(--wp--preset--color--nabu-darkblue);
+}
+.has-nabu-sand-background-color a:hover,
+.nabu-widget a:hover,
+.nabu-card--sand a:hover { color: var(--wp--preset--color--nabu-blue); }
+
+/* Kicker: uppercase by CSS, so screen readers read words. */
+.nabu-kicker,
+.is-style-nabu-kicker {
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	font-size: var(--wp--preset--font-size--small) !important;
+	font-weight: 600;
+	color: var(--wp--preset--color--nabu-greygreen) !important;
+	margin-bottom: 0.5rem;
+}
+
+.nabu-kicker__separator { margin-inline: 0.2em; }
+/* The topic in the article's date line links to its posts. */
+.nabu-article .nabu-kicker a { color: var(--wp--preset--color--nabu-blue); text-decoration: none; }
+.nabu-article .nabu-kicker a:hover { text-decoration: underline; }
+
+/* Subtitle under a heading. */
+.is-style-nabu-subtitle { color: var(--wp--preset--color--nabu-greygreen) !important; }
+
+/* ==========================================================================
+   Teaser cards — the whole card is the link
+   ========================================================================== */
+
+.nabu-cards { --wp--style--block-gap: 0; }
+.nabu-cards.wp-block-columns { gap: 1.5rem; }
+
+.nabu-card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	background: var(--wp--preset--color--white);
+	border: var(--nabu-hairline);
+	border-radius: var(--nabu-radius);
+	overflow: hidden;
+	transition: box-shadow var(--nabu-transition), transform var(--nabu-transition);
+	height: 100%;
+}
+.nabu-card:hover { box-shadow: var(--nabu-shadow-md); }
+/* The parts stack without gaps; the spacing lives in the paddings. */
+.nabu-card > * { margin-block-start: 0; }
+/* The same in page content, against the spacing of the text column. */
+.nabu-article.nabu-article .nabu-card > *,
+.nabu-article.nabu-article .nabu-card__body.nabu-card__body > * { margin-block-start: 0; }
+.nabu-card .wp-block-post-featured-image,
+.nabu-card > figure:first-child { margin: 0; position: relative; }
+.nabu-card .wp-block-post-featured-image img,
+.nabu-card > figure:first-child img {
+	/* 16:9: wide enough for landscape subjects, cheap for 4:3 phone photos. */
+	aspect-ratio: 16 / 9;
+	object-fit: cover;
+	width: 100%;
+	height: auto;
+	display: block;
+}
+/* A credit lies on the image, on a gradient that keeps it readable. */
+.nabu-card > figcaption,
+.nabu-card .wp-block-post-featured-image figcaption,
+.nabu-card > figure figcaption {
+	position: absolute;
+	inset-inline: 0;
+	bottom: 0;
+	margin: 0;
+	padding: 1.75rem 0.9rem 0.45rem;
+	text-align: right;
+	line-height: 1.3;
+	color: rgba(255, 255, 255, 0.92);
+	background: linear-gradient(to top, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0));
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+	pointer-events: none;
+}
+.nabu-card__body {
+	padding: 1.25rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.6rem;
+	flex: 1 1 auto;
+}
+/* The flex gap spaces the body; core's block gap would add to it. */
+.nabu-card__body.nabu-card__body > * { margin-block-start: 0; }
+.nabu-card__body.nabu-card__body > .wp-block-post-excerpt { margin-block-end: 0; }
+/* The arrow link sits at the foot of the card, the excerpt under the title. */
+.nabu-card__body > .nabu-arrow-link:last-child { margin-top: auto; }
+.nabu-card :is(h2, h3, .wp-block-post-title) {
+	/* One size for card titles, whatever their heading level. */
+	font-size: 1.3125rem;
+	hyphens: auto;
+	color: var(--wp--preset--color--nabu-blue);
+	margin: 0;
+}
+.nabu-card :is(h2, h3, .wp-block-post-title) a { text-decoration: none; color: inherit; }
+.nabu-card :is(h2, h3, .wp-block-post-title) a:hover { text-decoration: underline; }
+/* The heading's link covers the card; its name is the heading. */
+.nabu-card :is(h2, h3, .wp-block-post-title) a::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+}
+.nabu-card__body p { margin: 0; font-size: 1.0625rem; }
+.nabu-card .nabu-arrow-link { position: relative; z-index: 2; }
+
+/* Tinted card bodies. */
+.nabu-card--sand .nabu-card__body { background: var(--wp--preset--color--nabu-sand); }
+.nabu-card--tint .nabu-card__body { background: var(--wp--preset--color--nabu-lightblue); }
+
+/* Under the front page's events: the regular meeting, then "Alle Termine". */
+.nabu-events-foot { margin-top: 1.5rem; }
+.nabu-events-foot > * { margin: 0; }
+.nabu-events-foot > * + * { margin-top: 0.75rem; }
+
+/* Association news: four smaller cards in a row, below the group's own. */
+.nabu-association-news + .nabu-association-news { margin-top: var(--wp--preset--spacing--60); }
+.nabu-association-news__title { color: var(--wp--preset--color--nabu-blue); }
+/* The feed teasers are 3:2 and carry lettering at the edge; show them whole. */
+.nabu-association-news .nabu-card .wp-block-post-featured-image img { aspect-ratio: 3 / 2; }
+.nabu-grid.nabu-grid--small.wp-block-post-template {
+	list-style: none;
+	margin: 0 0 1rem;
+	padding: 0;
+	grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+	gap: 1.25rem;
+}
+.nabu-grid.nabu-grid--small.wp-block-post-template > li { margin: 0; }
+.nabu-grid--small .nabu-card__body { padding: 1rem; gap: 0.5rem; }
+.nabu-grid--small .nabu-card :is(h2, h3, h4, .wp-block-post-title) { font-size: 1.125rem; }
+.nabu-grid--small .nabu-card__body p { font-size: 1rem; }
+
+/* auto-fill, not auto-fit: a single card keeps its size instead of
+   stretching across the row. */
+.nabu-grid.wp-block-post-template {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: 1.5rem;
+}
+/* In the text column, the spacing between blocks (see Base) would push every
+   card but the first down; the doubled class outweighs it. */
+.nabu-grid.nabu-grid.wp-block-post-template > li { margin: 0; }
+
+/* ==========================================================================
+   Events — list layout
+   ========================================================================== */
+
+.nabu-events { list-style: none; padding: 0; margin: 0; display: grid; gap: 1rem; }
+.nabu-event {
+	display: grid;
+	grid-template-columns: 5.25rem 1fr;
+	gap: 1.25rem;
+	align-items: start;
+	background: var(--wp--preset--color--white);
+	border: var(--nabu-hairline);
+	border-left: 4px solid var(--wp--preset--color--nabu-orange);
+	border-radius: var(--nabu-radius);
+	padding: 1rem 1.25rem;
+	position: relative;
+}
+.nabu-event__date {
+	text-align: center;
+	line-height: 1.1;
+	color: var(--wp--preset--color--nabu-blue);
+	font-weight: 600;
+}
+.nabu-event__day { display: block; font-size: 1.75rem; }
+.nabu-event__month { display: block; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.nabu-event__year { display: block; font-size: 0.8125rem; color: var(--wp--preset--color--nabu-greygreen); }
+.nabu-event__time {
+	display: block;
+	margin-top: 0.3rem;
+	font-size: 0.875rem;
+	font-weight: 400;
+	white-space: nowrap;
+	color: var(--wp--preset--color--nabu-text);
+}
+.nabu-event__title { margin: 0 0 0.25rem; font-size: var(--wp--preset--font-size--large); }
+.nabu-event__title a { text-decoration: none; }
+.nabu-event__title a:hover { text-decoration: underline; }
+.nabu-event__meta {
+	margin: 0;
+	font-size: 1rem;
+	color: var(--wp--preset--color--nabu-greygreen);
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem 1rem;
+}
+.nabu-event__excerpt { margin: 0.5rem 0 0; font-size: 1.0625rem; }
+/* Past events are toned down by border and surface; opacity would cost contrast. */
+.nabu-event--past {
+	border-left-color: var(--wp--preset--color--nabu-greygreen);
+	background: rgba(255, 255, 255, 0.55);
+}
+.nabu-event--past .nabu-event__date,
+.nabu-event--past .nabu-event__title a { color: var(--wp--preset--color--nabu-greygreen); }
+.nabu-event--past .nabu-event__time { color: var(--wp--preset--color--nabu-greygreen); }
+/* Events as cards, built on the news cards. */
+.nabu-events--cards {
+	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+	gap: 1.5rem;
+}
+.nabu-events--cards > li { margin: 0; }
+.nabu-event-card__image { margin: 0; position: relative; }
+/* The date as a badge on the image. */
+.nabu-event-card__badge {
+	position: absolute;
+	top: 0.75rem;
+	left: 0.75rem;
+	min-width: 3.5rem;
+	padding: 0.4rem 0.5rem 0.35rem;
+	background: var(--wp--preset--color--nabu-blue);
+	color: #fff;
+	text-align: center;
+	line-height: 1.05;
+	font-weight: 600;
+	border-radius: var(--nabu-radius);
+	box-shadow: var(--nabu-shadow-md);
+	pointer-events: none;
+}
+.nabu-event-card__badge .nabu-event__day { font-size: 1.5rem; }
+.nabu-event-card__badge .nabu-event__month { font-size: 0.75rem; letter-spacing: 0.08em; }
+/* Date and time matter most after the title: blue and semibold. */
+.nabu-event-card__date-line {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 600;
+	color: var(--wp--preset--color--nabu-blue);
+	/* On one line, hence a numeric date. */
+	white-space: nowrap;
+}
+/* Location and meeting point, each on a line of its own. */
+.nabu-event-card .nabu-event__meta {
+	display: block;
+	font-size: 0.9375rem;
+	color: var(--wp--preset--color--nabu-greygreen);
+}
+.nabu-event-card .nabu-event__meta > span { display: block; }
+.nabu-event-card .nabu-event__meta > span + span { margin-top: 0.35rem; }
+.nabu-event-card .nabu-event__location,
+.nabu-event-card .nabu-event__label { font-weight: 600; }
+.nabu-event-card__image img {
+	aspect-ratio: 16 / 9;
+	object-fit: cover;
+	width: 100%;
+	height: auto;
+	display: block;
+}
+/* Without an image: a date head in the image's proportions. */
+.nabu-event-card__date-head {
+	aspect-ratio: 16 / 9;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	background: var(--wp--preset--color--nabu-blue);
+	color: #fff;
+	font-weight: 600;
+	line-height: 1.1;
+}
+.nabu-event-card__date-head .nabu-event__day { font-size: 3rem; }
+.nabu-event-card__date-head .nabu-event__month { font-size: 1rem; }
+.nabu-event-card .nabu-event__time,
+.nabu-event-details__line .nabu-event__time { display: inline; margin: 0; font: inherit; color: inherit; }
+.nabu-event-card .nabu-event__excerpt { margin: 0; }
+
+/* Event details: a box like the list items, labels in a column of their own. */
+.nabu-event-details__line { margin-bottom: 0.25rem; }
+.nabu-event-details {
+	background: var(--wp--preset--color--nabu-sand);
+	border-left: 4px solid var(--wp--preset--color--nabu-orange);
+	border-radius: var(--nabu-radius);
+	padding: 1rem 1.25rem;
+}
+.nabu-event-details__list { margin: 0; display: grid; gap: 0.5rem; }
+.nabu-event-details__row {
+	display: grid;
+	grid-template-columns: 7rem 1fr;
+	gap: 0.25rem 1rem;
+}
+.nabu-event-details__row dt {
+	font-weight: 600;
+	color: var(--wp--preset--color--nabu-blue);
+}
+.nabu-event-details__row dd { margin: 0; }
+@media (max-width: 480px) {
+	.nabu-event-details__row { grid-template-columns: 1fr; gap: 0; }
+}
+.nabu-event-details .nabu-embed { margin-top: 1rem; }
+/* The notice that an event is over. */
+.nabu-event-details__past {
+	margin: 0 0 0.75rem;
+	font-weight: 600;
+	color: var(--wp--preset--color--nabu-blue);
+}
+
+/* A report above the announcement. */
+.nabu-event-report { margin-bottom: var(--wp--preset--spacing--60); }
+.nabu-event-report .nabu-kicker { margin-bottom: 0.25rem; }
+/* Outweighs the heading spacing of the text column. */
+.nabu-article.nabu-article h2.nabu-event-report__title { margin-top: 0; }
+.nabu-event-report__image img { width: 100%; height: auto; border-radius: 7px; }
+.nabu-event-report__announcement {
+	padding-top: var(--wp--preset--spacing--50);
+	border-top: 1px solid var(--wp--preset--color--nabu-greygreen);
+}
+
+/* Third-party content such as the map; placeholder and consent come from
+   Embed Privacy. */
+.nabu-embed iframe {
+	width: 100%;
+	aspect-ratio: 16 / 9;
+	height: auto;
+	border: 0;
+	display: block;
+	border-radius: var(--nabu-radius);
+}
+
+@media (max-width: 480px) {
+	.nabu-event { grid-template-columns: 1fr; gap: 0.5rem; }
+	.nabu-event__date { text-align: left; }
+	.nabu-event__date > time {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0 0.4rem;
+	}
+	.nabu-event__time { margin-top: 0; }
+}
+
+/* ==========================================================================
+   Sidebar
+   ========================================================================== */
+
+.nabu-with-sidebar { align-items: start; }
+.nabu-sidebar {
+	font-size: 1.0625rem;
+}
+/* Events in the narrow sidebar are set flat, as on nabu.de: a blue date
+   line, the title in bold, the location below. Metrics as there. */
+.nabu-sidebar .nabu-widget > :is(.nabu-kicker, .is-style-nabu-kicker) {
+	font-size: 1.05rem !important;
+	font-weight: 500;
+	letter-spacing: normal;
+	line-height: 1.2;
+	margin-bottom: 0.25rem;
+	padding-bottom: 0.5625rem;
+}
+/* Core's block gap would add to the heading's spacing. */
+.nabu-sidebar .nabu-widget > .nabu-events-wrap { margin-block-start: 0; }
+.nabu-sidebar .nabu-events { gap: 0.75rem; }
+.nabu-sidebar .nabu-event {
+	display: block;
+	background: none;
+	border: 0;
+	border-radius: 0;
+	padding: 0;
+	hyphens: auto;
+}
+.nabu-sidebar .nabu-event__date {
+	text-align: left;
+	font-weight: 500;
+	font-size: 0.9375rem;
+	line-height: 1.35;
+	margin-bottom: 0;
+	color: var(--wp--preset--color--nabu-blue);
+}
+/* "9. Sep. 2026" on one line. */
+.nabu-sidebar .nabu-event__day::after { content: "."; }
+.nabu-sidebar .nabu-event__date > time {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0 0.2rem;
+}
+.nabu-sidebar .nabu-event__day,
+.nabu-sidebar .nabu-event__month,
+.nabu-sidebar .nabu-event__year,
+.nabu-sidebar .nabu-event__time {
+	display: inline;
+	margin: 0;
+	font-size: inherit;
+	font-weight: inherit;
+	letter-spacing: 0;
+	text-transform: none;
+	color: inherit;
+}
+/* A word space before the time. */
+.nabu-sidebar .nabu-event__time { margin-left: 0.3rem; }
+.nabu-sidebar .nabu-event__title {
+	font-size: 0.9375rem;
+	font-weight: 600;
+	line-height: 1.35;
+	margin: 0;
+}
+.nabu-sidebar .nabu-event__title a { color: var(--wp--preset--color--nabu-text); }
+.nabu-sidebar .nabu-event__meta {
+	font-size: 0.9375rem;
+	line-height: 1.35;
+	color: var(--wp--preset--color--nabu-text-muted);
+	flex-direction: column;
+	gap: 0.05rem;
+}
+.nabu-sidebar .nabu-event--past .nabu-event__date,
+.nabu-sidebar .nabu-event--past .nabu-event__title a { color: var(--wp--preset--color--nabu-greygreen); }
+.nabu-sidebar .nabu-widget { padding: 0.9rem; }
+.nabu-sidebar .nabu-widget--plain { padding: 0; }
+/* The spacing applies with and without the template part's wrapper. */
+.nabu-sidebar > * + *,
+.nabu-sidebar__content > * + * { margin-top: 2rem; }
+.nabu-widget {
+	background: var(--wp--preset--color--nabu-sand);
+	border-radius: var(--nabu-radius);
+	padding: 1.25rem;
+}
+.nabu-widget > :first-child { margin-top: 0; }
+.nabu-widget > :last-child { margin-bottom: 0; }
+/* The events list needs no box; sand is for calls to action. */
+.nabu-widget--plain {
+	background: none;
+	padding: 0;
+}
+
+/* Navigation box (nabu/sidenav): a blue frame, a white list with sand
+   hairlines. Blue marks the open section, bold the page on screen, sand the
+   branch below. */
+.nabu-navbox {
+	border: 1px solid var(--wp--preset--color--nabu-blue);
+	background: var(--wp--preset--color--white);
+	font-size: 0.9375rem;
+	line-height: 1.4;
+}
+.nabu-navbox ul {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+.nabu-navbox li + li { margin-top: 0; }
+.nabu-navbox ul a {
+	/* A full tap target on small screens, compact rows with a pointer. */
+	display: flex;
+	align-items: center;
+	box-sizing: border-box;
+	min-height: var(--nabu-tap);
+	padding: 0.5em 1em;
+	border-bottom: 1px solid var(--wp--preset--color--nabu-sand);
+	color: var(--wp--preset--color--nabu-blue);
+	text-decoration: none;
+}
+@media (min-width: 782px) {
+	.nabu-navbox ul a {
+		display: block;
+		min-height: 0;
+	}
+}
+/* No hairline over the frame — unless a branch hangs below the last entry. */
+.nabu-navbox li:last-child > a { border-bottom: 0; }
+.nabu-navbox li:last-child:has(ul) > a {
+	border-bottom: 1px solid var(--wp--preset--color--nabu-sand);
+}
+.nabu-navbox ul a:hover {
+	background: var(--wp--preset--color--nabu-sand);
+}
+/* Bold is exactly one row: the page on screen. */
+.nabu-navbox [aria-current="page"] {
+	font-weight: 600;
+}
+.nabu-navbox > ul > li > .nabu-navbox__open,
+.nabu-navbox > ul > li > .nabu-navbox__open:hover {
+	background: var(--wp--preset--color--nabu-blue);
+	color: #fff;
+	border-bottom-color: transparent;
+}
+
+/* The unfolded branch, on sand and without hairlines. */
+.nabu-navbox ul ul {
+	background: var(--wp--preset--color--nabu-sand);
+}
+.nabu-navbox ul ul a {
+	/* Long German compounds in a narrow column. */
+	hyphens: auto;
+	/* 1.75em for the second level, 1.25em more per level after that, and no
+	   further from the fourth on — the breadcrumbs show the rest. */
+	padding-left: min(calc(1.75em + (var(--nabu-level, 2) - 2) * 1.25em), 4.25em);
+	color: var(--wp--preset--color--nabu-darkblue);
+	border-bottom: 0;
+}
+.nabu-navbox ul ul a:hover {
+	background: #fff;
+}
+
+/* The note under the editor's sample box. */
+.nabu-navbox__note {
+	margin: 0;
+	padding: 0.5em 1em;
+	border-top: 1px solid var(--wp--preset--color--nabu-sand);
+	font-size: 0.875em;
+	font-style: italic;
+	color: var(--wp--preset--color--nabu-greygreen);
+}
+
+/* ==========================================================================
+   Mobile menu — the sidebar as an overlay
+   On narrow screens the sidebar's navigation box stands in for the main
+   navigation. All of it hangs on .nabu-has-menu, which only the script sets:
+   without JavaScript both stay where they are.
+   ========================================================================== */
+
+/* .nabu-header outweighs the header's tap-target rule. */
+.nabu-header .nabu-menu-toggle { display: none; }
+/* The landing page has the column as a menu only. */
+.nabu-sidebar--menu-only { display: none; }
+/* The sidebar's search shows only in the menu; wider screens have the one in the sand strip. */
+.nabu-menu-search { display: none; }
+
+@media (max-width: 781.98px) {
+	.nabu-has-menu .nabu-navbar .wp-block-navigation { display: none; }
+
+	.nabu-has-menu .nabu-header .nabu-menu-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-left: auto;
+		align-self: stretch;
+		min-height: var(--nabu-tap);
+		padding: 0 0.75rem;
+		border: 0;
+		background: none;
+		color: #fff;
+		font: inherit;
+		font-weight: 600;
+		font-size: 1.0625rem;
+		cursor: pointer;
+	}
+
+	/* The hamburger, drawn with borders. */
+	.nabu-menu-toggle__icon {
+		width: 1.25rem;
+		height: 0.875rem;
+		border-top: 2px solid currentColor;
+		border-bottom: 2px solid currentColor;
+		position: relative;
+	}
+	.nabu-menu-toggle__icon::before {
+		content: "";
+		position: absolute;
+		inset-inline: 0;
+		top: calc(50% - 1px);
+		border-top: 2px solid currentColor;
+	}
+
+	/* The column itself becomes the overlay. */
+	.nabu-has-menu .nabu-sidebar {
+		display: none;
+	}
+	.nabu-menu-open .nabu-sidebar {
+		display: block;
+		position: fixed;
+		/* Below the header, as measured by the script, so the toggle stays in view. */
+		top: var(--nabu-menu-top, 56px);
+		inset-inline: 0;
+		bottom: 0;
+		z-index: 100;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		/* White, so the sand boxes stand out. */
+		background: var(--wp--preset--color--white);
+		/* The logo tab hangs over the top edge. */
+		padding: calc(var(--nabu-menu-overhang, 0px) + 2rem) var(--nabu-gutter) 2rem;
+		margin: 0;
+	}
+
+	/* The header, logo tab included, stays above the overlay. */
+	.nabu-menu-open .nabu-header { z-index: 110; }
+
+	.nabu-menu-open .nabu-menu-search { display: block; }
+
+	/* The hamburger turns into a cross. */
+	.nabu-menu-open .nabu-menu-toggle__icon {
+		border-top-color: transparent;
+		border-bottom-color: transparent;
+	}
+	.nabu-menu-open .nabu-menu-toggle__icon::before { transform: rotate(45deg); }
+	.nabu-menu-open .nabu-menu-toggle__icon::after {
+		content: "";
+		position: absolute;
+		inset-inline: 0;
+		top: calc(50% - 1px);
+		border-top: 2px solid currentColor;
+		transform: rotate(-45deg);
+	}
+	.nabu-menu-open {
+		overflow: hidden;
+	}
+}
+
+/* ==========================================================================
+   Breadcrumbs
+   ========================================================================== */
+
+.nabu-breadcrumb {
+	font-size: 1rem;
+	color: var(--wp--preset--color--nabu-greygreen);
+}
+.nabu-breadcrumb ol {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem 0.5rem;
+	align-items: center;
+}
+.nabu-breadcrumb li { display: flex; align-items: center; gap: 0.5rem; }
+.nabu-breadcrumb li + li::before { content: "›"; color: var(--wp--preset--color--nabu-greygreen); }
+.nabu-breadcrumb a { color: var(--wp--preset--color--nabu-blue); text-decoration: none; }
+.nabu-breadcrumb a:hover { text-decoration: underline; }
+.nabu-breadcrumb [aria-current="page"] { color: var(--wp--preset--color--nabu-text-muted); }
+.nabu-breadcrumb__home svg { width: 1em; height: 1em; vertical-align: -0.125em; fill: currentColor; }
+
+/* A blue line under the trail, from the trail to the right edge of the grid:
+   padding on the list, indent on the block. Kept after the reset above,
+   which has the same specificity. */
+.nabu-breadcrumb > ol {
+	max-width: var(--nabu-container);
+	margin-inline: auto;
+	box-sizing: border-box;
+	padding: 0.75rem 1rem;
+	border-bottom: 1px solid var(--wp--preset--color--nabu-blue);
+}
+/* The trail starts beside the logo tab rather than below it, which costs no
+   height. The line starts there too. */
+@media (min-width: 782px) {
+	.nabu-breadcrumb {
+		box-sizing: border-box;
+		padding-left: calc(var(--nabu-logo-left) + var(--nabu-logo-w) + 1.5rem);
+	}
+}
+
+/* On mobile the tab reaches into the same row: a tighter setting beside it. */
+@media (max-width: 781px) {
+	.nabu-breadcrumb {
+		box-sizing: border-box;
+		padding-left: calc(var(--nabu-logo-w) + 0.5rem);
+	}
+	.nabu-breadcrumb > ol {
+		padding-block: 0;
+		min-height: max(var(--nabu-logo-overhang), 2.75rem);
+		font-size: 0.9375rem;
+		/* One line, shortening only the current title. */
+		flex-wrap: nowrap;
+	}
+
+	.nabu-breadcrumb li { flex: 0 0 auto; }
+	.nabu-breadcrumb li:last-child { flex: 0 1 auto; min-width: 0; overflow: hidden; }
+	.nabu-breadcrumb li:last-child > * {
+		display: block;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+}
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+
+.nabu-footer { font-size: var(--wp--preset--font-size--small); }
+.nabu-footer :is(h2, h3, p, li) { color: #fff; }
+.nabu-footer :is(h2, h3) {
+	font-size: 1rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	margin-bottom: 0.75rem;
+}
+.nabu-footer a { color: #fff; text-decoration: none; }
+.nabu-footer a:hover { text-decoration: underline; }
+.nabu-footer ul { list-style: none; padding: 0; margin: 0; }
+.nabu-footer li + li { margin-top: 0.4rem; }
+.nabu-footer li a::before { margin-right: 0.4em; opacity: 0.75; }
+.nabu-footer .wp-block-button__link { min-height: var(--nabu-tap); }
+.nabu-footer .nabu-social { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+.nabu-footer .nabu-social a {
+	width: var(--nabu-tap);
+	height: var(--nabu-tap);
+	justify-content: center;
+	border: 1px solid rgba(255, 255, 255, 0.5);
+	border-radius: 50%;
+}
+.nabu-footer .nabu-social a::before { content: none; }
+.nabu-footer .nabu-social a:hover { background: rgba(255, 255, 255, 0.15); }
+.nabu-footer .nabu-social svg { width: 1.25rem; height: 1.25rem; fill: #fff; }
+.nabu-footer__legal {
+	border-top: 1px solid rgba(255, 255, 255, 0.25);
+	padding-top: 1.25rem;
+	margin-top: 2rem;
+	font-size: 0.9375rem;
+}
+.nabu-footer__legal ul { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+.nabu-footer__legal li { margin-top: 0 !important; }
+
+/* Tap targets for the small links on touch devices. */
+@media (pointer: coarse) {
+	.nabu-footer li a,
+	.nabu-footer p a,
+	.nabu-breadcrumb a {
+		min-height: var(--nabu-tap);
+		display: inline-flex;
+		align-items: center;
+	}
+	.nabu-footer li + li { margin-top: 0; }
+}
+
+/* ==========================================================================
+   Bands & utilities
+   ========================================================================== */
+
+.nabu-band { padding-block: clamp(3rem, 6vw, 4rem); }
+.nabu-band--tight { padding-block: clamp(2rem, 4vw, 3rem); }
+
+/* On the front page the bands stack without gaps; their padding is the spacing. */
+.home .nabu-band { padding-block: clamp(2rem, 4vw, 3rem); }
+.home :is(.nabu-hero, .nabu-band) + .nabu-band { margin-block-start: 0; }
+
+/* A band in the article column (the contact block) reads as a box. */
+.nabu-article .nabu-band.has-background { border-radius: var(--nabu-radius); }
+
+/* The first band of a subpage follows the breadcrumbs closely. */
+.nabu-main > .nabu-breadcrumb + * {
+	margin-block-start: 0;
+}
+.nabu-main > .nabu-breadcrumb + .nabu-band {
+	padding-top: 1.875rem;
+}
+
+/* The text starts flush with the logo tab, not at the grid edge; so do the
+   columns inside a full-width band ("Was war"). */
+@media (min-width: 782px) {
+	.nabu-main > .nabu-band:not(.alignfull),
+	.nabu-band.alignfull > .nabu-with-sidebar {
+		box-sizing: border-box;
+		padding-left: var(--nabu-logo-left);
+	}
+}
+
+/* Captions start at the image's left edge. */
+figure.wp-block-image figcaption { text-align: left; }
+
+/* Tabs (pattern news-tabs). */
+.nabu-tabs__list { display: flex; flex-wrap: wrap; gap: 0.25rem; list-style: none; margin: 0 0 -1px; padding: 0; }
+.nabu-tabs__tab {
+	appearance: none;
+	border: 1px solid transparent;
+	border-bottom: 0;
+	background: var(--wp--preset--color--nabu-sand);
+	color: var(--wp--preset--color--nabu-greygreen);
+	font: inherit;
+	font-weight: 600;
+	padding: 0.7rem 1.15rem;
+	min-height: var(--nabu-tap);
+	cursor: pointer;
+	border-radius: var(--nabu-radius) var(--nabu-radius) 0 0;
+}
+.nabu-tabs__tab[aria-selected="true"] {
+	background: #fff;
+	color: var(--wp--preset--color--nabu-blue);
+	border-color: rgba(0, 0, 0, 0.12);
+	box-shadow: inset 0 4px 0 0 var(--wp--preset--color--nabu-blue);
+}
+.nabu-tabs__panel { border: 1px solid rgba(0, 0, 0, 0.12); border-radius: 0 var(--nabu-radius) var(--nabu-radius); padding: 1.5rem; }
+
+/* Donate bar (pattern donate-bar): dismissible, at most 15% of the window. */
+.nabu-donatebar {
+	position: fixed;
+	inset: auto 0 0 0;
+	z-index: 40;
+	background: var(--wp--preset--color--nabu-orange);
+	color: #fff;
+	max-height: 15vh;
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	padding: 0.75rem var(--nabu-gutter);
+	box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+}
+.nabu-donatebar[hidden] { display: none; }
+.nabu-donatebar p { margin: 0; font-weight: 600; }
+.nabu-donatebar__close {
+	margin-left: auto;
+	background: transparent;
+	border: 1px solid rgba(255, 255, 255, 0.6);
+	color: #fff;
+	border-radius: 50%;
+	width: var(--nabu-tap);
+	height: var(--nabu-tap);
+	flex: 0 0 auto;
+	cursor: pointer;
+	font-size: 1.25rem;
+	line-height: 1;
+}
+.nabu-donatebar__cta {
+	gap: 0.45em;
+	background: #fff;
+	color: var(--wp--preset--color--nabu-orange);
+	font-weight: 600;
+	text-decoration: none;
+	border-radius: var(--nabu-radius);
+	padding: 0.6rem 1.1rem;
+	min-height: var(--nabu-tap);
+	display: inline-flex;
+	align-items: center;
+}
+@media (max-width: 600px) {
+	.nabu-donatebar { max-height: none; flex-wrap: wrap; }
+}
+
+/* Pagination */
+.wp-block-query-pagination { margin-top: 2.5rem; font-weight: 600; }
+.wp-block-query-pagination a { text-decoration: none; }
+.wp-block-query-pagination a:hover { text-decoration: underline; }
+.wp-block-query-pagination-next::after { margin-left: 0.45em; }
+.wp-block-query-pagination-previous::before { margin-right: 0.45em; }
+
+/* Search form */
+.wp-block-search__button { border-radius: var(--nabu-radius); }
+.wp-block-search__input { border-radius: var(--nabu-radius); border: 1px solid rgba(0, 0, 0, 0.25); padding: 0.5rem 0.75rem; }

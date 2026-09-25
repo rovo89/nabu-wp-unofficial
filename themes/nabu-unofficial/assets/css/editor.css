@@ -1,0 +1,21 @@
+/*
+ * Block editor only, on top of style.css: what the editor canvas needs
+ * differently.
+ */
+
+/* The logo tab would stick out of the canvas. */
+.editor-styles-wrapper .nabu-logo-tab {
+	margin-top: 0;
+	margin-bottom: 0;
+	min-height: 0;
+	outline: 1px dashed rgba(0, 0, 0, 0.2);
+}
+
+/* Empty cards stay recognisable. */
+.editor-styles-wrapper .nabu-card { min-height: 6rem; }
+
+/* The stretched link would swallow every click meant to select a block. */
+.editor-styles-wrapper .nabu-card :is(h2, h3, .wp-block-post-title) a::after { content: none; }
+
+/* A hero tied to the window height leaves no room to edit its text. */
+.editor-styles-wrapper .nabu-hero.wp-block-cover { height: auto; min-height: 20rem; }
