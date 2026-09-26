@@ -135,7 +135,9 @@ auskommen.
 **Beitragsbild.** Es erscheint in den Kacheln im Format 16 : 9 und über dem
 Text im Format 3 : 2, beide Male beschnitten. Unter dem Bild in der
 Seitenleiste legt *Bildausschnitt* fest, welcher Punkt dabei zu sehen bleibt;
-ein neues Beitragsbild beginnt wieder mit der Mitte. Ohne Haken bei *Über dem
+ein neues Beitragsbild beginnt wieder mit der Mitte. Die Kachelbilder schneidet
+die Website beim Speichern selbst in passenden Größen zu; für sie genügt ein
+Foto ab 960 Pixeln Breite, im Hochformat ebenso. Ohne Haken bei *Über dem
 Text zeigen* steht es nur in den Kacheln — richtig, wenn dasselbe Foto im
 Text steht, etwa in einer Galerie. Das gilt ebenso für Seiten und Termine.
 

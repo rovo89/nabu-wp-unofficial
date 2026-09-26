@@ -34,6 +34,7 @@ require_once __DIR__ . '/inc/section-anchors.php';
 require_once __DIR__ . '/inc/sidenav.php';
 require_once __DIR__ . '/inc/nav-current.php';
 require_once __DIR__ . '/inc/image-credit.php';
+require_once __DIR__ . '/inc/card-images.php';
 require_once __DIR__ . '/inc/subtitle.php';
 require_once __DIR__ . '/inc/news.php';
 require_once __DIR__ . '/inc/group-blocks.php';

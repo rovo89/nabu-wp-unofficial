@@ -287,7 +287,8 @@ function nabu_render_event_item( $post, $show_excerpt, $past, $level = 3 ) {
  *
  * The featured image on top, with the date as a badge; without an image a
  * blue head with the large date in the same proportions, so a row of cards
- * stays flush.
+ * stays flush. The image is the card cut (card-images.php), loaded lazily:
+ * on the front page it sits below the hero, which comes first.
  *
  * @param WP_Post $post         Event.
  * @param bool    $show_excerpt Print the excerpt.
@@ -305,7 +306,7 @@ function nabu_render_event_card( $post, $show_excerpt, $level = 3 ) {
 		$head = sprintf(
 			'<figure class="nabu-event-card__image"><a href="%1$s" tabindex="-1" aria-hidden="true">%2$s</a><span class="nabu-event-card__badge" aria-hidden="true"><span class="nabu-event__day">%3$s</span><span class="nabu-event__month">%4$s</span></span></figure>',
 			$url,
-			get_the_post_thumbnail( $post, 'medium_large' ),
+			nabu_card_image( get_the_post_thumbnail( $post, 'medium_large', array( 'loading' => 'lazy' ) ), $post->ID ),
 			esc_html( $ts ? wp_date( 'j', $ts ) : '–' ),
 			esc_html( $ts ? wp_date( 'M', $ts ) : '' )
 		);

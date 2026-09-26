@@ -67,7 +67,7 @@ function nabu_association_source( $source ) {
  * @param string $source    "federal" or "state".
  * @param int    $count     Number of items.
  * @param bool   $news_only Only items below /news/ (falls back to all when that leaves fewer than two).
- * @return array<int, array{title:string, link:string, date:int, excerpt:string, image:string, alt:string}>
+ * @return array<int, array{title:string, link:string, date:int, excerpt:string, image:string, image_small?:string, image_width?:int, alt:string}>
  */
 function nabu_association_news( $source, $count = 4, $news_only = false ) {
 	if ( ! nabu_association_source( $source ) ) {
@@ -128,7 +128,9 @@ function nabu_association_news_refresh( $source ) {
 	$items = array_slice( $items, 0, 12 );
 
 	foreach ( $items as $i => $item ) {
-		$items[ $i ]['image'] = $item['image'] ? nabu_association_news_image( $item['image'], $config['feed'] ) : '';
+		$items[ $i ]['image']       = $item['image'] ? nabu_association_news_image( $item['image'], $config['feed'] ) : '';
+		$items[ $i ]['image_small'] = $items[ $i ]['image'] ? nabu_association_news_image_small( $items[ $i ]['image'] ) : '';
+		$items[ $i ]['image_width'] = $items[ $i ]['image_small'] ? nabu_association_news_image_width( $items[ $i ]['image'] ) : 0;
 	}
 
 	$result = array(
@@ -269,6 +271,53 @@ function nabu_association_news_image( $url, $feed ) {
 }
 
 /**
+ * Width of the small copy of a teaser image. The feeds deliver 680px; a tile
+ * is about 220px wide, so 440 serves double density.
+ */
+const NABU_NEWS_IMAGE_SMALL = 440;
+
+/**
+ * A smaller copy of a stored teaser image, beside it, for the tiles in a row.
+ * The original stays for a tile alone on a phone.
+ *
+ * @param string $url Local URL of the stored image.
+ * @return string URL of the copy; empty if the image is not wider or cannot be read.
+ */
+function nabu_association_news_image_small( $url ) {
+	$store = nabu_association_news_dir();
+	$name  = basename( (string) wp_parse_url( $url, PHP_URL_PATH ) );
+	$ext   = pathinfo( $name, PATHINFO_EXTENSION );
+	$small = pathinfo( $name, PATHINFO_FILENAME ) . '-' . NABU_NEWS_IMAGE_SMALL . '.' . $ext;
+
+	if ( file_exists( $store['dir'] . '/' . $small ) ) {
+		return $store['url'] . '/' . $small;
+	}
+
+	$editor = wp_get_image_editor( $store['dir'] . '/' . $name );
+	if ( is_wp_error( $editor ) || (int) $editor->get_size()['width'] <= NABU_NEWS_IMAGE_SMALL ) {
+		return '';
+	}
+
+	if ( is_wp_error( $editor->resize( NABU_NEWS_IMAGE_SMALL, null ) ) || is_wp_error( $editor->save( $store['dir'] . '/' . $small ) ) ) {
+		return '';
+	}
+
+	return $store['url'] . '/' . $small;
+}
+
+/**
+ * Width of a stored teaser image.
+ *
+ * @param string $url Local URL of the stored image.
+ * @return int 0 if it cannot be read.
+ */
+function nabu_association_news_image_width( $url ) {
+	$size = wp_getimagesize( nabu_association_news_dir()['dir'] . '/' . basename( (string) wp_parse_url( $url, PHP_URL_PATH ) ) );
+
+	return $size ? (int) $size[0] : 0;
+}
+
+/**
  * Remove stored images that no source refers to any more.
  */
 function nabu_association_news_cleanup() {
@@ -276,8 +325,10 @@ function nabu_association_news_cleanup() {
 	foreach ( array( 'federal', 'state' ) as $source ) {
 		$stored = get_option( 'nabu_news_' . $source );
 		foreach ( is_array( $stored ) ? (array) ( $stored['items'] ?? array() ) : array() as $item ) {
-			if ( ! empty( $item['image'] ) ) {
-				$keep[ basename( (string) $item['image'] ) ] = true;
+			foreach ( array( 'image', 'image_small' ) as $field ) {
+				if ( ! empty( $item[ $field ] ) ) {
+					$keep[ basename( (string) $item[ $field ] ) ] = true;
+				}
 			}
 		}
 	}

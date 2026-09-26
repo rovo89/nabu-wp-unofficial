@@ -45,9 +45,21 @@ function nabu_render_association_news( $attributes ) {
 	foreach ( $items as $item ) {
 		$image = '';
 		if ( $item['image'] ) {
-			$image = sprintf(
-				'<figure class="wp-block-post-featured-image"><img src="%1$s" alt="%2$s" loading="lazy" decoding="async"></figure>',
+			// The small copy for tiles in a row, the original for a tile alone
+			// on a phone. Items fetched before the copies existed have none.
+			$small  = ! empty( $item['image_small'] ) && ! empty( $item['image_width'] );
+			$srcset = $small ? sprintf(
+				' srcset="%1$s %2$dw, %3$s %4$dw" sizes="auto, %5$s"',
+				esc_url( $item['image_small'] ),
+				NABU_NEWS_IMAGE_SMALL,
 				esc_url( $item['image'] ),
+				(int) $item['image_width'],
+				esc_attr( NABU_CARD_SIZES_SMALL )
+			) : '';
+			$image  = sprintf(
+				'<figure class="wp-block-post-featured-image"><img src="%1$s"%2$s alt="%3$s" loading="lazy" decoding="async"></figure>',
+				esc_url( $small ? $item['image_small'] : $item['image'] ),
+				$srcset,
 				esc_attr( $item['alt'] )
 			);
 		}
