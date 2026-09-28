@@ -942,10 +942,33 @@ a.nabu-arrow-link:hover,
 /* Outweighs the heading spacing of the text column. */
 .nabu-article.nabu-article h2.nabu-event-report__title { margin-top: 0; }
 .nabu-event-report__image img { width: 100%; height: auto; border-radius: 7px; }
-.nabu-event-report__announcement {
+/* Under a report the announcement is folded away. */
+details.nabu-event-announcement {
 	padding-top: var(--wp--preset--spacing--50);
 	border-top: 1px solid var(--wp--preset--color--nabu-greygreen);
 }
+details.nabu-event-announcement > summary {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	cursor: pointer;
+	list-style: none;
+}
+details.nabu-event-announcement > summary::-webkit-details-marker { display: none; }
+/* A chevron that points down when open. */
+details.nabu-event-announcement > summary::before {
+	content: "";
+	flex: none;
+	width: 0.6rem;
+	height: 0.6rem;
+	margin-inline: 0.15rem 0.1rem;
+	border-right: 2.5px solid var(--wp--preset--color--nabu-blue);
+	border-bottom: 2.5px solid var(--wp--preset--color--nabu-blue);
+	transform: rotate(-45deg);
+	transition: transform 0.15s;
+}
+details.nabu-event-announcement[open] > summary::before { transform: rotate(45deg); }
+details.nabu-event-announcement > summary h2 { margin: 0; }
 
 /* Third-party content such as the map; placeholder and consent come from
    Embed Privacy. */

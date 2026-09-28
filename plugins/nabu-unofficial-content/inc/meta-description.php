@@ -11,6 +11,8 @@
  * - Front page: its excerpt, else "<group name> – <tagline>". Its content is
  *   layout (hero, query loops), not prose.
  * - Posts, events, pages: excerpt, else the first paragraphs.
+ * - An event with a report: that of the report, which is what the page is
+ *   about by then.
  * - Posts page and events overview: excerpt or text of the page standing in
  *   for them (Settings → Reading).
  * - Anything else (search, 404, archives): no description.
@@ -120,7 +122,10 @@ function nabu_meta_description() {
 			$description = $tagline ? nabu_group_get( 'name' ) . ' – ' . $tagline : '';
 		}
 	} elseif ( is_singular() ) {
-		$description = nabu_meta_description_of( get_queried_object() );
+		$post    = get_queried_object();
+		$reports = is_singular( 'nabu_event' ) ? nabu_event_reports( $post->ID ) : array();
+
+		$description = nabu_meta_description_of( $reports ? $reports[0] : $post );
 	} elseif ( is_home() && get_option( 'page_for_posts' ) ) {
 		$description = nabu_meta_description_of( get_post( (int) get_option( 'page_for_posts' ) ) );
 	} elseif ( is_post_type_archive( 'nabu_event' ) && nabu_events_page_id() ) {

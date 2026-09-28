@@ -121,11 +121,15 @@ Termin setzen, mit einem Alternativtext, der das Wichtigste nennt.
 
 **Bericht nach dem Termin.** Einen ganz normalen *Beitrag* schreiben und
 rechts unter *Bericht zu Termin* den Termin wählen — oder im Termin auf
-*Bericht zu diesem Termin schreiben* klicken. Der Bericht steht dann auf der
-Seite des Termins über der Ankündigung, unter derselben Adresse, die vorher
-schon verschickt wurde; unter „Aktuelles“ erscheint er mit „Bericht · Datum“.
-Wird der Bericht zurückgezogen oder der Termin gelöscht, ist alles wieder wie
-vorher.
+*Bericht zu diesem Termin schreiben* klicken; dann sind Termin und Titel
+schon eingetragen. Der Bericht steht dann auf der Seite des Termins, unter
+derselben Adresse, die vorher schon verschickt wurde; die Ankündigung mit
+Wann, Wo und Karte ist darunter eingeklappt. Heißt der Bericht wie der
+Termin, steht der Titel dort nur einmal; einen eigenen Titel zeigt die Seite
+über dem Bericht. Unter „Aktuelles“ erscheint er wie jeder Beitrag und führt
+zur Terminseite. Einen Slug muss man nicht festlegen: Die Adresse des
+Berichts ist die des Termins. Wird der Bericht zurückgezogen oder der Termin
+gelöscht, ist alles wieder wie vorher.
 
 > Termine zusätzlich an die zentrale Termindatenbank des NABU melden
 > (`termine@NABU.de` oder das Formular auf nabu.de/termine). Nur dann

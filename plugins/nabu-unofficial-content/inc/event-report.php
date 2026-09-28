@@ -201,6 +201,29 @@ function nabu_report_meta_box_render( $post ) {
 }
 
 /**
+ * "Bericht zu diesem Termin schreiben" starts the post with the event's title;
+ * the event page then shows no second heading over the report.
+ *
+ * @param string  $title Default title.
+ * @param WP_Post $post  New post.
+ * @return string
+ */
+function nabu_report_default_title( $title, $post ) {
+	if ( '' !== $title || 'post' !== $post->post_type || ! isset( $_GET['nabu_report_for'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		return $title;
+	}
+
+	$event = get_post( absint( $_GET['nabu_report_for'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+	if ( ! $event || 'nabu_event' !== $event->post_type || ! current_user_can( 'read_post', $event->ID ) ) {
+		return $title;
+	}
+
+	return $event->post_title;
+}
+add_filter( 'default_title', 'nabu_report_default_title', 10, 2 );
+
+/**
  * Save the dropdown.
  *
  * @param int $post_id Post ID.

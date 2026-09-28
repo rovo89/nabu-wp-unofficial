@@ -5,8 +5,8 @@
  * A report is an ordinary post that names its event; the companion plugin
  * sends every link to it to the event page. There the block
  * nabu/event-report shows it above the announcement — it sits in the event
- * template, editors never insert it. In the news cards a report says what it
- * is: "Bericht · …".
+ * template, editors never insert it — and the announcement folds away under
+ * "Ankündigung".
  *
  * @package nabu-unofficial
  */
@@ -46,8 +46,9 @@ function nabu_event_is_past( $post ) {
 /**
  * Render the reports on the event page (nabu/event-report).
  *
- * Each report with date, title, featured image and text, then the heading
- * "Ankündigung" over the event itself. Without a report, nothing.
+ * Each report with date, title, featured image and text. The title is left
+ * out where it only repeats the event's, and the image where the report says
+ * so. Without a report, nothing.
  *
  * @param array    $attributes Unused.
  * @param string   $content    Unused.
@@ -75,13 +76,20 @@ function nabu_render_event_report( $attributes, $content, $block ) {
 	global $post;
 	$previous = $post;
 
+	$event_title = nabu_comparable_title( get_the_title( $event ) );
+
 	$html = '';
 	foreach ( $reports as $i => $report ) {
 		$post = $report; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 		setup_postdata( $post );
 
+		$title = '';
+		if ( nabu_comparable_title( get_the_title( $report ) ) !== $event_title ) {
+			$title = '<h2 class="wp-block-heading nabu-event-report__title">' . esc_html( get_the_title( $report ) ) . '</h2>';
+		}
+
 		$image = '';
-		if ( has_post_thumbnail( $report ) ) {
+		if ( has_post_thumbnail( $report ) && ! ( function_exists( 'nabu_image_hidden' ) && nabu_image_hidden( $report->ID ) ) ) {
 			$image = nabu_append_image_credit(
 				'<figure class="wp-block-post-featured-image nabu-event-report__image">' . get_the_post_thumbnail( $report, 'large' ) . '</figure>',
 				(int) get_post_thumbnail_id( $report )
@@ -91,7 +99,7 @@ function nabu_render_event_report( $attributes, $content, $block ) {
 		$html .= sprintf(
 			'<section class="nabu-event-report"%1$s>
 				<p class="nabu-kicker">%2$s</p>
-				<h2 class="wp-block-heading nabu-event-report__title">%3$s</h2>
+				%3$s
 				%4$s
 				<div class="nabu-event-report__content">%5$s</div>
 			</section>',
@@ -101,7 +109,7 @@ function nabu_render_event_report( $attributes, $content, $block ) {
 				esc_html__( 'Bericht vom %s', 'nabu-unofficial' ),
 				'<time datetime="' . esc_attr( get_the_date( 'Y-m-d', $report ) ) . '">' . esc_html( get_the_date( 'j. F Y', $report ) ) . '</time>'
 			),
-			esc_html( get_the_title( $report ) ),
+			$title,
 			$image,
 			apply_filters( 'the_content', $report->post_content ) // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		);
@@ -114,13 +122,47 @@ function nabu_render_event_report( $attributes, $content, $block ) {
 
 	$wrapper = get_block_wrapper_attributes( array( 'class' => 'nabu-event-reports' ) );
 
-	return sprintf(
-		'<div %1$s>%2$s<h2 class="wp-block-heading nabu-event-report__announcement">%3$s</h2></div>',
-		$wrapper,
-		$html,
-		esc_html__( 'Ankündigung', 'nabu-unofficial' )
-	);
+	return sprintf( '<div %1$s>%2$s</div>', $wrapper, $html );
 }
+
+/**
+ * A title as the reader sees it, for comparing two of them.
+ *
+ * @param string $title Title as get_the_title() returns it.
+ * @return string
+ */
+function nabu_comparable_title( $title ) {
+	return mb_strtolower( trim( (string) preg_replace( '/\s+/u', ' ', html_entity_decode( wp_strip_all_tags( $title ), ENT_QUOTES, 'UTF-8' ) ) ) );
+}
+
+/**
+ * Fold the announcement away once there is a report.
+ *
+ * In the event template the group nabu-event-announcement holds the event's
+ * image, text and details. With a report above it, the group becomes a closed
+ * <details> under the heading "Ankündigung".
+ *
+ * @param string $block_content Rendered markup.
+ * @param array  $block         Block data.
+ * @return string
+ */
+function nabu_event_announcement( $block_content, $block ) {
+	if ( ! preg_match( '/(^|\s)nabu-event-announcement(\s|$)/', $block['attrs']['className'] ?? '' ) ) {
+		return $block_content;
+	}
+
+	$event_id = get_the_ID();
+	if ( ! $event_id || 'nabu_event' !== get_post_type( $event_id ) || ! nabu_event_reports( $event_id ) ) {
+		return $block_content;
+	}
+
+	$summary = '<summary><h2 class="wp-block-heading">' . esc_html__( 'Ankündigung', 'nabu-unofficial' ) . '</h2></summary>';
+
+	$block_content = (string) preg_replace( '/^\s*<div\b([^>]*)>/', '<details$1>' . $summary, $block_content, 1 );
+
+	return (string) preg_replace( '#</div>\s*$#', '</details>', $block_content, 1 );
+}
+add_filter( 'render_block_core/group', 'nabu_event_announcement', 10, 2 );
 
 /**
  * Register nabu/event-report.
@@ -145,22 +187,3 @@ function nabu_register_event_report_block() {
 	);
 }
 add_action( 'init', 'nabu_register_event_report_block' );
-
-/**
- * Date line of the news cards: a report says it is one.
- *
- * @param string   $block_content Rendered markup.
- * @param array    $block         Block data.
- * @param WP_Block $instance      Block instance with context.
- * @return string
- */
-function nabu_news_kicker( $block_content, $block, $instance ) {
-	$post_id = isset( $instance->context['postId'] ) ? (int) $instance->context['postId'] : 0;
-
-	if ( ! $post_id || '' === $block_content || ! function_exists( 'nabu_report_event' ) || ! nabu_report_event( $post_id ) ) {
-		return $block_content;
-	}
-
-	return (string) preg_replace( '#<time\b#', esc_html__( 'Bericht', 'nabu-unofficial' ) . nabu_kicker_separator() . '<time', $block_content, 1 );
-}
-add_filter( 'render_block_core/post-date', 'nabu_news_kicker', 10, 3 );

@@ -12,9 +12,13 @@
 		<div class="wp-block-column nabu-measure nabu-article" style="flex-basis:72%">
 			<!-- wp:post-title {"level":1} /-->
 			<!-- wp:nabu/event-report /-->
-			<!-- wp:post-featured-image {"aspectRatio":"2/1","style":{"border":{"radius":"7px"}}} /-->
-			<!-- wp:post-content {"layout":{"type":"constrained"},"fontSize":"lead"} /-->
-			<!-- wp:nabu/event-details /-->
+			<!-- wp:group {"className":"nabu-event-announcement","layout":{"type":"default"}} -->
+			<div class="wp-block-group nabu-event-announcement">
+				<!-- wp:post-featured-image {"aspectRatio":"2/1","style":{"border":{"radius":"7px"}}} /-->
+				<!-- wp:post-content {"layout":{"type":"constrained"},"fontSize":"lead"} /-->
+				<!-- wp:nabu/event-details /-->
+			</div>
+			<!-- /wp:group -->
 		</div>
 		<!-- /wp:column -->
 
