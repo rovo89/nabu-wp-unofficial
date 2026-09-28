@@ -451,7 +451,8 @@ $nabu_join = nabu_scaffold_content(
 	nabu_scaffold_p( '<a href="' . esc_url( $nabu_events_url ) . '">Nächste Termine ansehen</a>', array( 'className' => 'nabu-arrow-link' ) ),
 	nabu_scaffold_h( 'Mitglied werden' ),
 	nabu_scaffold_p( 'Eine Mitgliedschaft im NABU unterstützt automatisch auch unsere Gruppe. Sie können jederzeit eintreten, auch wenn Sie nicht aktiv mitarbeiten möchten.' ),
-	nabu_scaffold_p( '<a href="https://www.nabu.de/spenden-und-mitmachen/mitglied-werden/">Jetzt Mitglied werden</a>', array( 'className' => 'nabu-arrow-link' ) ),
+	// Redirects to NABU's form for the group (nabu_group_membership_redirect()).
+	nabu_scaffold_p( '<a href="/mitglied-werden/">Jetzt Mitglied werden</a>', array( 'className' => 'nabu-arrow-link' ) ),
 	nabu_scaffold_h( 'Spenden', 2, array( 'anchor' => 'spenden' ) ),
 	nabu_scaffold_p( 'Spenden an die Gruppe fließen zu hundert Prozent in die Arbeit vor Ort. Auf Wunsch stellen wir eine Zuwendungsbestätigung aus.' ),
 	// Without bank details the box disappears (nabu-optional).

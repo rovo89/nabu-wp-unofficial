@@ -13,6 +13,13 @@ dann stimmt es überall. Ein leeres Feld lässt seinen Absatz weg, im Editor
 steht an seiner Stelle grau „NABU Gruppe“; fehlt etwas, das ins Impressum
 gehört, weist das Backend darauf hin.
 
+Für den Beitritt hat die Website die Adresse **`/mitglied-werden/`**. Sie
+führt auf das Beitrittsformular des NABU; steht in den Einstellungen die
+**VW-Nummer** der Gruppe, auf das Formular der Gruppe, und neue Mitglieder
+werden ihr zugeordnet. In Texten, Flyern und QR-Codes also immer auf
+`/mitglied-werden/` verlinken, nicht direkt auf nabu.de — dann stimmt der
+Link auch, wenn sich die Nummer einmal ändert.
+
 ## Seitenstruktur und Navigation
 
 Die **Seitenspalte** zeigt die Hauptseiten der Website und klappt den

@@ -4,7 +4,8 @@
  *
  * Everything that differs from one local group to the next lives here and in
  * no theme file: name, address, contact, state association, register entry,
- * bank account, meeting, social links and the address of the events archive.
+ * bank account, meeting, social links, the membership number and the address
+ * of the events archive.
  * Stored in the option `nabu_group`, edited under Settings → NABU Gruppe and
  * exposed as the block bindings source `nabu/group`, so the footer, the
  * contact block and the legal pages show one value instead of three copies.
@@ -57,6 +58,7 @@ function nabu_group_fields() {
 		'state_association'       => array( 'section' => 'group', 'label' => __( 'Landesverband', 'nabu-unofficial-content' ), 'type' => 'select' ),
 		'state_association_short' => array( 'section' => 'group', 'label' => __( 'Landesverband, kurz', 'nabu-unofficial-content' ), 'type' => 'text', 'help' => __( 'Für die kleine Navigation oben, etwa „NABU BW“. Leer: die Kurzform des Verbands, wenn er eine hat, sonst der volle Name.', 'nabu-unofficial-content' ) ),
 		'representative'          => array( 'section' => 'group', 'label' => __( 'Vertreten durch', 'nabu-unofficial-content' ), 'type' => 'text', 'help' => __( 'Der vertretungsberechtigte Vorstand, für das Impressum.', 'nabu-unofficial-content' ) ),
+		'member_number'           => array( 'section' => 'group', 'label' => __( 'VW-Nummer', 'nabu-unofficial-content' ), 'type' => 'member_number', 'help' => __( 'Die Werbernummer der Gruppe, zugleich ihre Gruppennummer beim NABU, etwa „12345“. Die Adresse /mitglied-werden/ führt dann auf das Beitrittsformular des NABU für die Gruppe, und neue Mitglieder werden ihr zugeordnet. Leer: das allgemeine Formular.', 'nabu-unofficial-content' ) ),
 		'meeting'                 => array( 'section' => 'group', 'label' => __( 'Treffen', 'nabu-unofficial-content' ), 'type' => 'textarea', 'help' => __( 'Zum Beispiel „Jeden ersten Donnerstag um 19:30 Uhr im Nebenzimmer des Gasthauses“.', 'nabu-unofficial-content' ) ),
 
 		'street'                  => array( 'section' => 'contact', 'label' => __( 'Straße und Hausnummer', 'nabu-unofficial-content' ), 'type' => 'text' ),
@@ -154,6 +156,10 @@ function nabu_group_sanitize( $input ) {
 				break;
 			case 'slug':
 				$value = sanitize_title( $raw );
+				break;
+			case 'member_number':
+				// Taken as given, "12345" or "VW0012345"; stored without padding.
+				$value = ltrim( (string) preg_replace( '/\D/', '', $raw ), '0' );
 				break;
 			default:
 				$value = sanitize_text_field( $raw );
@@ -403,6 +409,46 @@ function nabu_group_value( $key ) {
 			return esc_html( nabu_group_get( $key ) );
 	}
 }
+
+/**
+ * NABU's membership form, the group's own when its number is set.
+ *
+ * The form takes the number as `werbername`, "VW" and seven digits, and
+ * credits the new member to the group.
+ *
+ * @return string Unescaped URL.
+ */
+function nabu_group_membership_url() {
+	$number = nabu_group_get( 'member_number' );
+
+	if ( '' === $number ) {
+		return 'https://www.nabu.de/spenden-und-mitmachen/mitglied-werden/';
+	}
+
+	return 'https://www.nabu.de/spenden-und-mitmachen/mitglied-werden/gruppen.html?werbername=VW' . str_pad( $number, 7, '0', STR_PAD_LEFT );
+}
+
+/**
+ * The address /mitglied-werden/ leads to the membership form.
+ *
+ * Content links there instead of to NABU's form: the address stays valid
+ * when the number changes, on a page as on a flyer or a QR code. A page with
+ * that address takes precedence; only a request that would end in a 404 is
+ * redirected, and before redirect_canonical(), which would guess some
+ * similarly named post instead.
+ */
+function nabu_group_membership_redirect() {
+	global $wp;
+
+	if ( ! is_404() || 'mitglied-werden' !== $wp->request ) {
+		return;
+	}
+
+	// Temporary: the number may change, and browsers keep permanent redirects.
+	wp_redirect( nabu_group_membership_url(), 302, 'NABU Unofficial' ); // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- nabu.de is the target.
+	exit;
+}
+add_action( 'template_redirect', 'nabu_group_membership_redirect', 5 );
 
 /**
  * The settings a lawful site cannot do without.

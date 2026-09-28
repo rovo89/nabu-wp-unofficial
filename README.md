@@ -37,10 +37,11 @@ Code und Kommentare sind Englisch, alles Sichtbare — Oberfläche, Adressen wie
 
 Alles, was eine Gruppe von der nächsten unterscheidet, steht in
 *Einstellungen → NABU Gruppe*: Name, Anschrift, Kontakt, Landesverband,
-Vereinsregister, Spendenkonto, Treffen, soziale Netzwerke und die Adresse
-der Terminübersicht. Kopf- und Fußbereich, Kontaktblock und Rechtsseiten
-lesen diese Werte über die Block-Bindings-Quelle `nabu/group`; in den
-Theme-Dateien steht kein Ortsname und keine Anschrift.
+Vereinsregister, Spendenkonto, Treffen, soziale Netzwerke, die VW-Nummer
+für das Beitrittsformular und die Adresse der Terminübersicht. Kopf- und
+Fußbereich, Kontaktblock und Rechtsseiten lesen diese Werte über die
+Block-Bindings-Quelle `nabu/group`; in den Theme-Dateien steht kein Ortsname
+und keine Anschrift.
 
 Für das erste Aufsetzen: `scripts/group.example.json` nach
 `scripts/group.json` kopieren, ausfüllen, `scaffold.php` ausführen. Die
