@@ -113,6 +113,23 @@ add_action( 'wp_head', 'nabu_favicon' );
 add_action( 'admin_head', 'nabu_favicon' );
 
 /**
+ * /favicon.ico gets the same icon.
+ *
+ * Crawlers ask for it regardless of the link in the head, and WordPress
+ * answers with its own logo when no site icon is set. Only reached when no
+ * favicon.ico file lies in the document root.
+ */
+function nabu_favicon_ico() {
+	if ( has_site_icon() ) {
+		return;
+	}
+
+	wp_redirect( get_template_directory_uri() . '/assets/images/favicon.ico' );
+	exit;
+}
+add_action( 'do_faviconico', 'nabu_favicon_ico' );
+
+/**
  * Block styles. Free colour choice is locked in theme.json; these variants
  * are what editors choose from instead.
  */

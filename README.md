@@ -122,7 +122,11 @@ Theme mehr — bis jemand dort die Anpassungen zurücksetzt.
 2. **Logo** hochladen (SVG von NABU-Publishing), über den Link im Hinweis,
    den das Backend zeigt, solange keins gesetzt ist; bis dahin steht auf der
    Website ein Platzhalter. Das Website-Icon steht unter *Einstellungen →
-   Allgemein*.
+   Allgemein*; ohne eins zeigt das Theme das NABU-Favicon in 32 px. Google
+   möchte mindestens 48 px und zeigt das Icon rund beschnitten, daher
+   besser ein quadratisches Bild ab 512 px mit Rand hochladen. Liegt im
+   Dokumentenverzeichnis eine `favicon.ico` des Hosters, muss sie weg —
+   Suchmaschinen fragen diese Adresse ab und übernehmen sonst deren Icon.
 3. **Alle Bilder und Beispieltexte** ersetzen. Echte Fotos kommen aus der
    NABU-Medienbibliothek oder von Mitgliedern — nicht von nabu.de.
 4. **Impressum und Datenschutzerklärung**: Die Gerüste lesen Anschrift und
